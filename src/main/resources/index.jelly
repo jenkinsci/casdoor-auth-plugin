@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    This is the authentication plugin using Casdoor OAuth.
+</div>
