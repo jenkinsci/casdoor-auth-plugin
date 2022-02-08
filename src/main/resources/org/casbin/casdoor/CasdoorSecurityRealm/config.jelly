@@ -1,31 +1,33 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:section title="Global Casdoor Settings" name="casdoor" >
-        <f:entry title="Casdoor Endpoint"  field="endpoint">
-            <f:textbox/>
-        </f:entry>
-        <f:entry title="Client ID"  field="clientId">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Client Secret"  field="clientSecret">
-            <f:password />
-        </f:entry>
-    </f:section>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="Casdoor Endpoint" field="endpoint">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Client ID" field="clientId">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Client Secret" field="clientSecret">
+        <f:password/>
+    </f:entry>
+    <f:entry title="JWT Public Key" field="jwtPublicKey">
+        <f:textarea/>
+    </f:entry>
+    <f:entry title="Organization Name" field="organizationName">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Application Name" field="applicationName">
+        <f:textbox/>
+    </f:entry>
     <f:advanced>
         <f:entry title="Scopes" field="scopes">
             <f:textbox/>
         </f:entry>
-        <f:entry title="User name field name" field="userNameField">
-            <f:textbox/>
-        </f:entry>
-        <f:entry title="Full name field name" field="fullNameFieldName">
-            <f:textbox/>
-        </f:entry>
-        <f:entry title="Email field name" field="emailFieldName">
-            <f:textbox/>
-        </f:entry>
         <f:entry title="Groups field name" field="groupsFieldName">
             <f:textbox/>
+        </f:entry>
+        <f:entry title="Disable ssl verification" field="disableSslVerification">
+            <f:checkbox/>
         </f:entry>
     </f:advanced>
 </j:jelly>
