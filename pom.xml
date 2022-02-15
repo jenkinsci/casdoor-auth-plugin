@@ -7,12 +7,21 @@
         <artifactId>plugin</artifactId>
         <version>4.32</version>
     </parent>
-    <groupId>org.casbin</groupId>
-    <artifactId>jenkins-casdoor-auth</artifactId>
+
+    <artifactId>casdoor</artifactId>
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <name>Casdoor Authentication Plugin</name>
     <url>https://github.com/casdoor/jenkins-casdoor-auth</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <properties>
         <revision>1.0</revision>
