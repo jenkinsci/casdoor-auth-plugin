@@ -8,11 +8,12 @@
         <version>4.32</version>
     </parent>
 
-    <artifactId>casdoor</artifactId>
+    <groupId>io.jenkins.plugins</groupId>
+    <artifactId>casdoor-auth</artifactId>
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <name>Casdoor Authentication Plugin</name>
-    <url>https://github.com/casdoor/jenkins-casdoor-auth</url>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <licenses>
         <license>
@@ -28,6 +29,7 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.277.1</jenkins.version>
         <java.level>8</java.level>
+        <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     </properties>
 
     <dependencies>
@@ -54,6 +56,13 @@
         </dependency>
     </dependencies>
 
+    <scm>
+        <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
+        <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+        <url>https://github.com/${gitHubRepo}</url>
+        <tag>${scmTag}</tag>
+    </scm>
+    
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
