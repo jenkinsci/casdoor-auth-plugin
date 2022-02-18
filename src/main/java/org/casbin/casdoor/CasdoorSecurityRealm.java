@@ -23,6 +23,7 @@ import hudson.model.User;
 import hudson.model.UserProperty;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import jenkins.security.SecurityListener;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
@@ -31,6 +32,7 @@ import org.casbin.casdoor.config.CasdoorConfig;
 import org.casbin.casdoor.entity.CasdoorUser;
 import org.casbin.casdoor.exception.CasdoorException;
 import org.casbin.casdoor.service.CasdoorAuthService;
+import org.casbin.casdoor.util.http.HttpClient;
 import org.kohsuke.stapler.*;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -40,6 +42,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import javax.servlet.ServletException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -52,9 +55,10 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
 public class CasdoorSecurityRealm extends SecurityRealm {
 
     private static final String REFERER_ATTRIBUTE = CasdoorSecurityRealm.class.getName() + ".referer";
+    private static final String logoutRouter = "/api/logout";
 
     private final String clientId;
-    private final String clientSecret;
+    private final Secret clientSecret;
     private final String endpoint;
     private final String jwtPublicKey;
     private final String organizationName;
@@ -65,7 +69,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
     @DataBoundConstructor
     public CasdoorSecurityRealm(String clientId, String clientSecret, String endpoint, String jwtPublicKey, String organizationName, String applicationName, String scopes, String groupsFieldName) {
         this.clientId = clientId;
-        this.clientSecret = clientSecret;
+        this.clientSecret = Secret.fromString(clientSecret);
         this.endpoint = endpoint;
         this.jwtPublicKey = jwtPublicKey;
         this.organizationName = organizationName;
@@ -78,7 +82,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         request.getSession().setAttribute(REFERER_ATTRIBUTE, referer);
 
         String redirect = redirectUrl();
-        CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret, jwtPublicKey, organizationName, applicationName);
+        CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtPublicKey, organizationName, applicationName);
         CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
         return new HttpRedirect(authService.getSigninUrl(redirect));
     }
@@ -106,9 +110,15 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
     }
 
+    public void doLogout(StaplerRequest request, StaplerResponse response) throws ServletException, IOException {
+        Stapler.getCurrentRequest().getSession().removeAttribute("casdoorUser");
+        HttpClient.postString(endpoint + logoutRouter, "");
+        super.doLogout(request, response);
+    }
+
     private HttpResponse onSuccess(StaplerRequest request, String code) {
         try {
-            CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret, jwtPublicKey, organizationName, applicationName);
+            CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtPublicKey, organizationName, applicationName);
             CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
             String token = authService.getOAuthToken(code, this.applicationName);
             CasdoorUser userInfo = authService.parseJwtToken(token);
@@ -215,7 +225,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         return clientId;
     }
 
-    public String getClientSecret() {
+    public Secret getClientSecret() {
         return clientSecret;
     }
 
