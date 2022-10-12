@@ -10,7 +10,7 @@
     <f:entry title="Client Secret" field="clientSecret">
         <f:password/>
     </f:entry>
-    <f:entry title="JWT Public Key" field="jwtPublicKey">
+    <f:entry title="JWT Certificate" field="jwtCertificate">
         <f:textarea/>
     </f:entry>
     <f:entry title="Organization Name" field="organizationName">

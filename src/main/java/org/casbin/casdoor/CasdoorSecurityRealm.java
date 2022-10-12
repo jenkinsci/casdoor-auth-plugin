@@ -60,18 +60,18 @@ public class CasdoorSecurityRealm extends SecurityRealm {
     private final String clientId;
     private final Secret clientSecret;
     private final String endpoint;
-    private final String jwtPublicKey;
+    private final String jwtCertificate;
     private final String organizationName;
     private final String applicationName;
     private final String scopes;
     private final String groupsFieldName;
 
     @DataBoundConstructor
-    public CasdoorSecurityRealm(String clientId, String clientSecret, String endpoint, String jwtPublicKey, String organizationName, String applicationName, String scopes, String groupsFieldName) {
+    public CasdoorSecurityRealm(String clientId, String clientSecret, String endpoint, String jwtCertificate, String organizationName, String applicationName, String scopes, String groupsFieldName) {
         this.clientId = clientId;
         this.clientSecret = Secret.fromString(clientSecret);
         this.endpoint = endpoint;
-        this.jwtPublicKey = jwtPublicKey;
+        this.jwtCertificate = jwtCertificate;
         this.organizationName = organizationName;
         this.applicationName = applicationName;
         this.scopes = scopes;
@@ -82,7 +82,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         request.getSession().setAttribute(REFERER_ATTRIBUTE, referer);
 
         String redirect = redirectUrl();
-        CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtPublicKey, organizationName, applicationName);
+        CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
         CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
         return new HttpRedirect(authService.getSigninUrl(redirect));
     }
@@ -94,10 +94,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
         // Validate state and code
         AuthorizationCodeResponseUrl responseUrl = new AuthorizationCodeResponseUrl(buf.toString());
-        // Casdoor use application name as state
-        if (!this.applicationName.equals(responseUrl.getState())) {
-            return new Failure("State is invalid");
-        }
+
         String code = responseUrl.getCode();
         if (responseUrl.getError() != null) {
             return new Failure(
@@ -118,7 +115,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
 
     private HttpResponse onSuccess(StaplerRequest request, String code) {
         try {
-            CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtPublicKey, organizationName, applicationName);
+            CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
             CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
             String token = authService.getOAuthToken(code, this.applicationName);
             CasdoorUser userInfo = authService.parseJwtToken(token);
@@ -132,7 +129,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
                 return HttpResponses.redirectTo(referer);
             }
             return HttpResponses.redirectToContextRoot();
-        } catch (OAuthProblemException | OAuthSystemException | InvocationTargetException | IllegalAccessException | IOException | CasdoorException e) {
+        } catch (IOException | CasdoorException e) {
             e.printStackTrace();
             return HttpResponses.error(500, e);
         }
@@ -233,8 +230,8 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         return endpoint;
     }
 
-    public String getJwtPublicKey() {
-        return jwtPublicKey;
+    public String getJwtCertificate() {
+        return jwtCertificate;
     }
 
     public String getOrganizationName() {
