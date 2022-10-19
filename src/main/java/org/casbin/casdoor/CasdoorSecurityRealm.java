@@ -26,8 +26,6 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import jenkins.security.SecurityListener;
-import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
-import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.casbin.casdoor.config.CasdoorConfig;
 import org.casbin.casdoor.entity.CasdoorUser;
 import org.casbin.casdoor.exception.CasdoorException;
@@ -44,11 +42,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
@@ -80,11 +74,13 @@ public class CasdoorSecurityRealm extends SecurityRealm {
 
     public HttpResponse doCommenceLogin(StaplerRequest request, StaplerResponse response, @Header("Referer") final String referer) throws IOException {
         request.getSession().setAttribute(REFERER_ATTRIBUTE, referer);
+        String state = UUID.randomUUID().toString();
+        request.getSession().setAttribute("casdoorState", state);
 
         String redirect = redirectUrl();
         CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
         CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
-        return new HttpRedirect(authService.getSigninUrl(redirect));
+        return new HttpRedirect(authService.getSigninUrl(redirect, state));
     }
 
     public HttpResponse doFinishLogin(StaplerRequest request) {
@@ -94,7 +90,9 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
         // Validate state and code
         AuthorizationCodeResponseUrl responseUrl = new AuthorizationCodeResponseUrl(buf.toString());
-
+        if (!responseUrl.getState().equals(request.getSession().getAttribute("casdoorState"))) {
+            return new Failure("Inconsistent state");
+        }
         String code = responseUrl.getCode();
         if (responseUrl.getError() != null) {
             return new Failure(
