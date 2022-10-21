@@ -42,6 +42,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
@@ -90,7 +92,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
         // Validate state and code
         AuthorizationCodeResponseUrl responseUrl = new AuthorizationCodeResponseUrl(buf.toString());
-        if (!responseUrl.getState().equals(request.getSession().getAttribute("casdoorState"))) {
+        if (!MessageDigest.isEqual(responseUrl.getState().getBytes(StandardCharsets.UTF_8), request.getSession().getAttribute("casdoorState").toString().getBytes(StandardCharsets.UTF_8))) {
             return new Failure("Inconsistent state");
         }
         String code = responseUrl.getCode();
