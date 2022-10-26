@@ -1,4 +1,4 @@
-package org.casbin.casdoor;
+package io.jenkins.plugins;
 
 import hudson.model.User;
 import hudson.model.UserProperty;

@@ -2,7 +2,7 @@
 
 ## About
 
-This plugin incorporates SSO in [Jenkins](http://jenkins-ci.org/) with [Casdoor](https://casdoor.org/)
+This plugin incorporates SSO in [Jenkins](https://jenkins.io) with [Casdoor](https://casdoor.org/)
 
 ## Installation
 
