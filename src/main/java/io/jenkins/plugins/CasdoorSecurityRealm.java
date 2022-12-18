@@ -25,6 +25,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -153,7 +154,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
     }
 
     private String redirectUrl() {
-        Jenkins instance = Jenkins.getInstanceOrNull();
+        @Nullable Jenkins instance = Jenkins.getInstanceOrNull();
         if (instance == null) {
             throw new NullPointerException("Jenkins instance should not be null");
         }
