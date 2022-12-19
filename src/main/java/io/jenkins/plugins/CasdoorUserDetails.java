@@ -5,9 +5,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.io.Serializable;
 
-public class CasdoorUserDetails implements UserDetails {
-
+public class CasdoorUserDetails implements UserDetails,Serializable{
+    private static final long serialVersionUID = 1L;
     private final String username;
     private final GrantedAuthority[] grantedAuthorities;
 

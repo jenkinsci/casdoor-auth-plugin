@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <Match>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    <Class name="io.jenkins.plugins.CasdoorSecurityRealm"/>
+     <Method name="redirectUrl" />
+  </Match>
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="io.jenkins.plugins.CasdoorUserDetails"/>
+  </Match>
+  <Match>
+    <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    <Class name="io.jenkins.plugins.CasdoorUserDetails"/>
+  </Match>
+</FindBugsFilter>
