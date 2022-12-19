@@ -9,7 +9,7 @@
     </parent>
 
     <groupId>io.jenkins.plugins</groupId>
-    <artifactId>casdoor</artifactId>
+    <artifactId>casdoor-auth</artifactId>
     <version>${changelist}</version>
     <packaging>hpi</packaging>
     <name>Casdoor Authentication Plugin</name>
