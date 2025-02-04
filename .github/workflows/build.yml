@@ -1,0 +1,38 @@
+name: CI Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          echo '<settings>
+            <mirrors>
+              <mirror>
+                <id>jenkins</id>
+                <mirrorOf>jenkins-public</mirrorOf>
+                <url>https://repo.jenkins-ci.org/public/</url>
+                <layout>default</layout>
+              </mirror>
+            </mirrors>
+          </settings>' > ~/.m2/settings.xml
+
+      - name: Clear Maven cache
+        run: mvn clean dependency:purge-local-repository
+
+      - name: Run Maven Build
+        run: mvn clean install -Dspotbugs.skip=true
