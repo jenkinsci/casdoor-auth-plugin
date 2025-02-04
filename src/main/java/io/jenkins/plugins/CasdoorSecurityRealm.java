@@ -27,7 +27,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -61,7 +61,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         this.groupsFieldName = groupsFieldName;
     }
 
-    public HttpResponse doCommenceLogin(StaplerRequest request, StaplerResponse response, @Header("Referer") final String referer) throws IOException {
+    public HttpResponse doCommenceLogin(StaplerRequest2 request, StaplerResponse2 response, @Header("Referer") final String referer) throws IOException {
         request.getSession().setAttribute(REFERER_ATTRIBUTE, referer);
         String state = UUID.randomUUID().toString();
         request.getSession().setAttribute("casdoorState", state);
@@ -72,7 +72,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         return new HttpRedirect(authService.getSigninUrl(redirect, state));
     }
 
-    public HttpResponse doFinishLogin(StaplerRequest request) {
+    public HttpResponse doFinishLogin(StaplerRequest2 request) {
         StringBuffer buf = request.getRequestURL();
         if (request.getQueryString() != null) {
             buf.append('?').append(request.getQueryString());
@@ -94,13 +94,13 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
     }
 
-    public void doLogout(StaplerRequest request, StaplerResponse response) throws ServletException, IOException {
+    public void doLogout(StaplerRequest2 request, StaplerResponse2 response) throws ServletException, IOException {
         Stapler.getCurrentRequest().getSession().removeAttribute("casdoorUser");
         HttpClient.postString(endpoint + logoutRouter, "");
         super.doLogout(request, response);
     }
 
-    private HttpResponse onSuccess(StaplerRequest request, String code) {
+    private HttpResponse onSuccess(StaplerRequest2 request, String code) {
         try {
             CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
             CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
