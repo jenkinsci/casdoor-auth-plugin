@@ -20,6 +20,7 @@ import org.kohsuke.stapler.*;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -145,7 +146,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
 
         if (isNotBlank(groupsFieldName) && userInfo.groups != null) {
             for (String groupName : userInfo.groups) {
-                grantedAuthorities.add(new CasdoorUserProperty.GrantedAuthorityImpl(groupName));
+                grantedAuthorities.add(new SimpleGrantedAuthority(groupName));
             }
         }
 
