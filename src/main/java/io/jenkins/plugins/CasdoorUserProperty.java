@@ -3,7 +3,6 @@ package io.jenkins.plugins;
 import hudson.model.User;
 import hudson.model.UserProperty;
 import hudson.model.UserPropertyDescriptor;
-import org.acegisecurity.GrantedAuthorityImpl;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.ArrayList;
