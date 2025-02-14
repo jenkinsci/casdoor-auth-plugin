@@ -3,7 +3,7 @@ package io.jenkins.plugins;
 import hudson.model.User;
 import hudson.model.UserProperty;
 import hudson.model.UserPropertyDescriptor;
-import org.acegisecurity.GrantedAuthorityImpl;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ public class CasdoorUserProperty extends UserProperty {
     public GrantedAuthority[] getAuthoritiesAsGrantedAuthorities() {
         GrantedAuthority[] authorities = new GrantedAuthority[this.authorities.size()];
         for (int i = 0; i < authorities.length; i++) {
-            authorities[i] = new GrantedAuthorityImpl(this.authorities.get(i));
+            authorities[i] = new SimpleGrantedAuthority(this.authorities.get(i));
         }
         return authorities;
     }
@@ -54,30 +54,5 @@ public class CasdoorUserProperty extends UserProperty {
     @Override
     public UserPropertyDescriptor getDescriptor() {
         return new Descriptor();
-    }
-
-    public static class GrantedAuthorityImpl implements GrantedAuthority {
-        private static final long serialVersionUID = 1L;
-        private final String role;
-
-        public GrantedAuthorityImpl(String role) {
-            this.role = role;
-        }
-
-        public String getAuthority() {
-            return this.role;
-        }
-
-        public String toString() {
-            return this.role;
-        }
-
-        public boolean equals(Object o) {
-            return o instanceof GrantedAuthorityImpl && this.role.equals(((GrantedAuthorityImpl)o).role);
-        }
-
-        public int hashCode() {
-            return this.role.hashCode();
-        }
     }
 }

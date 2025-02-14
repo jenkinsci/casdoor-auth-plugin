@@ -12,22 +12,22 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import jenkins.security.SecurityListener;
-import org.casbin.casdoor.config.CasdoorConfig;
-import org.casbin.casdoor.entity.CasdoorUser;
-import org.casbin.casdoor.exception.CasdoorException;
-import org.casbin.casdoor.service.CasdoorAuthService;
+import org.casbin.casdoor.config.Config;
+import org.casbin.casdoor.exception.AuthException;
+import org.casbin.casdoor.service.AuthService;
 import org.casbin.casdoor.util.http.HttpClient;
 import org.kohsuke.stapler.*;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -61,18 +61,18 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         this.groupsFieldName = groupsFieldName;
     }
 
-    public HttpResponse doCommenceLogin(StaplerRequest request, StaplerResponse response, @Header("Referer") final String referer) throws IOException {
+    public HttpResponse doCommenceLogin(StaplerRequest2 request, StaplerResponse2 response, @Header("Referer") final String referer) throws IOException {
         request.getSession().setAttribute(REFERER_ATTRIBUTE, referer);
         String state = UUID.randomUUID().toString();
         request.getSession().setAttribute("casdoorState", state);
 
         String redirect = redirectUrl();
-        CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
-        CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
+        Config casdoorConfig = new Config(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
+        AuthService authService = new AuthService(casdoorConfig);
         return new HttpRedirect(authService.getSigninUrl(redirect, state));
     }
 
-    public HttpResponse doFinishLogin(StaplerRequest request) {
+    public HttpResponse doFinishLogin(StaplerRequest2 request) {
         StringBuffer buf = request.getRequestURL();
         if (request.getQueryString() != null) {
             buf.append('?').append(request.getQueryString());
@@ -94,18 +94,19 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
     }
 
-    public void doLogout(StaplerRequest request, StaplerResponse response) throws ServletException, IOException {
+    public void doLogout(StaplerRequest2 request, StaplerResponse2 response) throws ServletException, IOException {
         Stapler.getCurrentRequest().getSession().removeAttribute("casdoorUser");
-        HttpClient.postString(endpoint + logoutRouter, "");
+        // arg 3 is credential - what credential to use for a logout request?
+        HttpClient.postString(endpoint + logoutRouter, "", "");
         super.doLogout(request, response);
     }
 
-    private HttpResponse onSuccess(StaplerRequest request, String code) {
+    private HttpResponse onSuccess(StaplerRequest2 request, String code) {
         try {
-            CasdoorConfig casdoorConfig = new CasdoorConfig(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
-            CasdoorAuthService authService = new CasdoorAuthService(casdoorConfig);
+            Config casdoorConfig = new Config(endpoint, clientId, clientSecret.getPlainText(), jwtCertificate, organizationName, applicationName);
+            AuthService authService = new AuthService(casdoorConfig);
             String token = authService.getOAuthToken(code, this.applicationName);
-            CasdoorUser userInfo = authService.parseJwtToken(token);
+            org.casbin.casdoor.entity.User userInfo = authService.parseJwtToken(token);
 
             Stapler.getCurrentRequest().getSession().setAttribute("casdoorUser", userInfo);
 
@@ -116,37 +117,36 @@ public class CasdoorSecurityRealm extends SecurityRealm {
                 return HttpResponses.redirectTo(referer);
             }
             return HttpResponses.redirectToContextRoot();
-        } catch (IOException | CasdoorException e) {
+        } catch (IOException | AuthException e) {
             e.printStackTrace();
             return HttpResponses.error(500, e);
         }
     }
 
-    private UsernamePasswordAuthenticationToken loginAndSetUserData(CasdoorUser userInfo) throws IOException {
+    private UsernamePasswordAuthenticationToken loginAndSetUserData(org.casbin.casdoor.entity.User userInfo) throws IOException {
 
         GrantedAuthority[] grantedAuthorities = determineAuthorities(userInfo);
 
-        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userInfo.getName(), "", Arrays.asList(grantedAuthorities));
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userInfo.name, "", Arrays.asList(grantedAuthorities));
 
         SecurityContextHolder.getContext().setAuthentication(token);
 
         User user = User.getOrCreateByIdOrFullName(token.getName());
-        user.addProperty(new CasdoorUserProperty(userInfo.getName(), grantedAuthorities));
+        user.addProperty(new CasdoorUserProperty(userInfo.name, grantedAuthorities));
 
-        CasdoorUserDetails userDetails = new CasdoorUserDetails(userInfo.getName(), grantedAuthorities);
+        CasdoorUserDetails userDetails = new CasdoorUserDetails(userInfo.name, grantedAuthorities);
         SecurityListener.fireAuthenticated2(userDetails);
 
         return token;
     }
 
-    private GrantedAuthority[] determineAuthorities(CasdoorUser userInfo) {
+    private GrantedAuthority[] determineAuthorities(org.casbin.casdoor.entity.User userInfo) {
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(SecurityRealm.AUTHENTICATED_AUTHORITY2);
 
-        if (isNotBlank(groupsFieldName) && userInfo.getProperties().containsKey(groupsFieldName)) {
-            String[] groupNames = userInfo.getProperties().get(groupsFieldName).split(",");
-            for (String groupName : groupNames) {
-                grantedAuthorities.add(new CasdoorUserProperty.GrantedAuthorityImpl(groupName));
+        if (isNotBlank(groupsFieldName) && userInfo.groups != null) {
+            for (String groupName : userInfo.groups) {
+                grantedAuthorities.add(new SimpleGrantedAuthority(groupName));
             }
         }
 
