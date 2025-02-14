@@ -10,7 +10,7 @@ TODO
 
 ## Usage
 
-You can refer to [Casdoor Official Doc](https://casdoor.org/docs/integration/jenkins%20oidc).
+You can refer to [Casdoor Official Doc](https://casdoor.org/docs/integration/java/jenkins-plugin/).
 
 The following are some of the names in the configuration:
 
@@ -39,7 +39,7 @@ Not surprisingly, you can get two values ​​on the application settings page:
 Open your favorite browser and visit: **http://`CASDOOR_HOSTNAME`/.well-known/openid-configuration**, you will see the OIDC configure of Casdoor.
 
 ### Step3. Configure Jenkins
-Now, you can install Casdoor plugin from the market or by uploading its `jar` file.
+Now, you can install [Casdoor plugin](https://plugins.jenkins.io/casdoor-auth/) from the plugin manager by searching for "Casdoor"
 
 After completing the installation, go to Manage Jenkins -> Configure Global Security.
 
