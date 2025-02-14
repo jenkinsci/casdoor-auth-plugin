@@ -95,7 +95,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
     }
 
     public void doLogout(StaplerRequest2 request, StaplerResponse2 response) throws ServletException, IOException {
-        Stapler.getCurrentRequest().getSession().removeAttribute("casdoorUser");
+        Stapler.getCurrentRequest2().getSession().removeAttribute("casdoorUser");
         // arg 3 is credential - what credential to use for a logout request?
         HttpClient.postString(endpoint + logoutRouter, "", "");
         super.doLogout(request, response);
@@ -108,7 +108,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
             String token = authService.getOAuthToken(code, this.applicationName);
             org.casbin.casdoor.entity.User userInfo = authService.parseJwtToken(token);
 
-            Stapler.getCurrentRequest().getSession().setAttribute("casdoorUser", userInfo);
+            Stapler.getCurrentRequest2().getSession().setAttribute("casdoorUser", userInfo);
 
             loginAndSetUserData(userInfo);
 
