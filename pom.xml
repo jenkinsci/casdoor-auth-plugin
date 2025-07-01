@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.casbin</groupId>
             <artifactId>casdoor-java-sdk</artifactId>
-            <version>1.35.0</version>
+            <version>1.36.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-beanutils</groupId>
