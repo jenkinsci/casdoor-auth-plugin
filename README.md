@@ -6,7 +6,7 @@ This plugin incorporates SSO in [Jenkins](https://jenkins.io) with [Casdoor](htt
 
 ## Installation
 
-TODO
+Go to: https://plugins.jenkins.io/casdoor-auth/
 
 ## Usage
 
