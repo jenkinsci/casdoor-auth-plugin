@@ -144,7 +144,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
         grantedAuthorities.add(SecurityRealm.AUTHENTICATED_AUTHORITY2);
 
-        if (isNotBlank(groupsFieldName) && userInfo.groups != null) {
+        if (groupsFieldName != null && groupsFieldName.contains("groups") && userInfo.groups != null) {
             for (String groupName : userInfo.groups) {
                 grantedAuthorities.add(new SimpleGrantedAuthority(groupName));
             }
