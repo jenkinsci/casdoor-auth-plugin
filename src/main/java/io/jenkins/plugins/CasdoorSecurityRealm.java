@@ -33,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
 
-import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class CasdoorSecurityRealm extends SecurityRealm {
 
