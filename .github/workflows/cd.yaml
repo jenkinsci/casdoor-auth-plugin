@@ -1,4 +1,8 @@
 # Note: additional setup is required, see https://www.jenkins.io/redirect/continuous-delivery-of-plugins
+#
+# This is a local copy of jenkins-infra/github-reusable-workflows maven-cd.yml with the
+# "interesting categories" gate removed: every green commit on master is released, whether
+# or not its pull request carried a label.
 
 name: cd
 on:
@@ -8,8 +12,58 @@ on:
       - completed
 
 jobs:
-  maven-cd:
-    uses: jenkins-infra/github-reusable-workflows/.github/workflows/maven-cd.yml@v1
-    secrets:
-      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-      MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.verify-ci-status.outputs.result == 'success' }}
+    steps:
+      - name: Verify CI status
+        uses: jenkins-infra/verify-ci-status-action@v1.2.2
+        id: verify-ci-status
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          output_result: true
+      - name: Release Drafter
+        uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+        id: draft
+        if: steps.verify-ci-status.outputs.result == 'success'
+        with:
+          name: next
+          tag: next
+          version: next
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: needs.validate.outputs.should_release == 'true'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      # A CI re-run fires check_run again for a commit that already has a release;
+      # the version is derived from the commit, so releasing twice would clash.
+      - name: Detect an already released commit
+        id: released
+        run: |
+          tag="$(git tag --points-at HEAD)"
+          if [ -n "$tag" ]; then
+            echo "$GITHUB_SHA is already released as $tag, skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Release
+        if: steps.released.outputs.skip != 'true'
+        uses: jenkins-infra/jenkins-maven-cd-action@v1.4.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
+          # The action re-applies the category filter on check_run events; '.' matches
+          # any draft body so the release is never skipped for lack of labels.
+          INTERESTING_CATEGORIES: '.'
