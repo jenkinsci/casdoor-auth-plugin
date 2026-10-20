@@ -1,8 +1,10 @@
 package io.jenkins.plugins;
 
 import com.google.api.client.auth.oauth2.AuthorizationCodeResponseUrl;
+import com.nimbusds.jwt.SignedJWT;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.Descriptor;
 import hudson.model.Failure;
 import hudson.model.User;
@@ -31,6 +33,7 @@ import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.text.ParseException;
 import java.util.*;
 
 
@@ -47,6 +50,7 @@ public class CasdoorSecurityRealm extends SecurityRealm {
     private final String applicationName;
     private final String scopes;
     private final String groupsFieldName;
+    private String usernameFieldName;
 
     @DataBoundConstructor
     public CasdoorSecurityRealm(String clientId, String clientSecret, String endpoint, String jwtCertificate, String organizationName, String applicationName, String scopes, String groupsFieldName) {
@@ -58,6 +62,11 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         this.applicationName = applicationName;
         this.scopes = scopes;
         this.groupsFieldName = groupsFieldName;
+    }
+
+    @DataBoundSetter
+    public void setUsernameFieldName(String usernameFieldName) {
+        this.usernameFieldName = Util.fixEmptyAndTrim(usernameFieldName);
     }
 
     public HttpResponse doCommenceLogin(StaplerRequest2 request, StaplerResponse2 response, @Header("Referer") final String referer) throws IOException {
@@ -107,9 +116,14 @@ public class CasdoorSecurityRealm extends SecurityRealm {
             String token = authService.getOAuthToken(code, this.applicationName);
             org.casbin.casdoor.entity.User userInfo = authService.parseJwtToken(token);
 
+            String username = determineUsername(token, userInfo);
+            if (username == null) {
+                return new Failure("The claim \"" + usernameFieldName + "\" set as the username field is missing or empty in the token from Casdoor");
+            }
+
             Stapler.getCurrentRequest2().getSession().setAttribute("casdoorUser", userInfo);
 
-            loginAndSetUserData(userInfo);
+            loginAndSetUserData(username, userInfo);
 
             String referer = (String) request.getSession().getAttribute(REFERER_ATTRIBUTE);
             if (referer != null) {
@@ -122,18 +136,35 @@ public class CasdoorSecurityRealm extends SecurityRealm {
         }
     }
 
-    private UsernamePasswordAuthenticationToken loginAndSetUserData(org.casbin.casdoor.entity.User userInfo) throws IOException {
+    private String determineUsername(String token, org.casbin.casdoor.entity.User userInfo) throws AuthException {
+        if (usernameFieldName == null) {
+            return userInfo.name;
+        }
+
+        Object claim;
+        try {
+            claim = SignedJWT.parse(token).getJWTClaimsSet().getClaim(usernameFieldName);
+        } catch (ParseException e) {
+            throw new AuthException("Cannot parse jwt token.", e);
+        }
+        if (claim instanceof String && !((String) claim).trim().isEmpty()) {
+            return ((String) claim).trim();
+        }
+        return null;
+    }
+
+    private UsernamePasswordAuthenticationToken loginAndSetUserData(String username, org.casbin.casdoor.entity.User userInfo) throws IOException {
 
         GrantedAuthority[] grantedAuthorities = determineAuthorities(userInfo);
 
-        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(userInfo.name, "", Arrays.asList(grantedAuthorities));
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(username, "", Arrays.asList(grantedAuthorities));
 
         SecurityContextHolder.getContext().setAuthentication(token);
 
         User user = User.getOrCreateByIdOrFullName(token.getName());
-        user.addProperty(new CasdoorUserProperty(userInfo.name, grantedAuthorities));
+        user.addProperty(new CasdoorUserProperty(username, grantedAuthorities));
 
-        CasdoorUserDetails userDetails = new CasdoorUserDetails(userInfo.name, grantedAuthorities);
+        CasdoorUserDetails userDetails = new CasdoorUserDetails(username, grantedAuthorities);
         SecurityListener.fireAuthenticated2(userDetails);
 
         return token;
@@ -230,6 +261,10 @@ public class CasdoorSecurityRealm extends SecurityRealm {
 
     public String getScopes() {
         return scopes;
+    }
+
+    public String getUsernameFieldName() {
+        return usernameFieldName;
     }
 
     @Extension
